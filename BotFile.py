@@ -30,7 +30,7 @@ def docScanner(message):
         f.write(response.content)
     
     image = cv2.imread("input/temp.jpg")
-    scanner = DocScan(final_output=True,output=True)
+    scanner = DocScan(final_output=True)
     image, dest = scanner.scan(image)
     bot.send_photo(message.chat.id, open(dest,"rb"),reply_markup=ReplyKeyboardRemove())
 
