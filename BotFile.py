@@ -93,10 +93,10 @@ def got_res(message):
         response= requests.get(f"https://api.telegram.org/file/bot{token}/{file.file_path}")
         with open("input/temp.jpg","wb") as f:
             f.write(response.content)
-        output_path,quality,final_res,size =compress("input/temp.jpg",data['target_size'],res)
+        output_path,quality,final_res =compress("input/temp.jpg",data['target_size'],res)
 
     bot.send_message(message.chat.id,f"""
-The file has been reduced to {size}Kb
+The file has been reduced to {int(os.path.getsize(output_path)/1024)}Kb
 The resolution has been reduced to {final_res}
 The quality is reduced to {quality}
     """)

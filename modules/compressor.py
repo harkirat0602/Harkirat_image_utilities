@@ -39,7 +39,7 @@ def compress(img_path:str, limit_size:int =False, given_res= False):
             res = tuple(map(lambda x: int(x*0.9), res))
             buffer.seek(0,0)
 
-    return "output/final.jpg", quality, res, int(buffer.tell()/1024)
+    return "output/final.jpg", quality, res
 
 
 if __name__ == "__main__":
