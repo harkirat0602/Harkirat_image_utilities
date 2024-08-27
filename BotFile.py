@@ -83,7 +83,11 @@ def got_res(message):
     elif message.text=='1':
         res=1
     else:
-        res = tuple(map(int,message.text.split('X')))
+        try:
+            res = tuple(map(int,message.text.split('X')))
+        except:
+            bot.send_message(message.chat.id,"Wrong Input, Please Try again...")
+            return
         if len(res) != 2:
             bot.send_message(message.chat.id,"Resolution is wrong")
             return

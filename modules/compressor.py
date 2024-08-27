@@ -35,8 +35,8 @@ def compress(img_path:str, limit_size:int =False, given_res= False):
             print(im.size)
             break
         else: 
-            quality-=5
-            res = tuple(map(lambda x: int(x*0.9), res))
+            quality-=2
+            res = tuple(map(lambda x: int(x*0.95), res))
             buffer.seek(0,0)
 
     return "output/final.jpg", quality, res
