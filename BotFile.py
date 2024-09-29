@@ -1,5 +1,6 @@
 import telebot
 import os
+from datetime import datetime
 
 import telebot.custom_filters
 from Detector import DocScan
@@ -9,16 +10,19 @@ from telebot.handler_backends import State, StatesGroup
 from telebot.storage import StateMemoryStorage
 from telebot.types import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from modules.compressor import compress
+from modules.PDF import generate_pdf
 
 state_storage = StateMemoryStorage()
 
 token = os.getenv('BOT_TOKEN')
 bot = telebot.TeleBot(token, state_storage=state_storage)
+input_prefix = "D:\\Repositories\\Harkirat_Image_Utilities\\input\\"
 
 class MyStates(StatesGroup):
     got_image = State()
     got_size = State()
     got_res = State()
+    get_images = State()
 
 
 def docScanner(message):
@@ -39,10 +43,42 @@ def docScanner(message):
     bot.delete_state(message.from_user.id, message.chat.id)
 
 
+
 @bot.message_handler(state="*", commands=['cancel'])
 def cancel_task(message):
+    try:
+        path = input_prefix+str(message.from_user.id)+"\\"
+        for file in os.listdir(path):
+            os.remove(path+file)
+        os.rmdir(path)
+    except Exception as e:
+        print(e)
     bot.send_message(message.chat.id, "Your task was cancelled")
     bot.delete_state(message.from_user.id, message.chat.id)
+
+
+@bot.message_handler(state=MyStates.get_images,content_types="photo")
+def recieve_images_for_pdf(message):
+    image_path = input_prefix+str(message.from_user.id)+"\\"+str(datetime.now()).replace(" ","").replace(".","").replace(":","_")+".jpg"
+    print(image_path)
+    photo = message.photo[-1]
+    file = bot.get_file(photo.file_id)
+    content = bot.download_file(file.file_path)
+    with open(image_path,"wb") as img:
+        img.write(content)
+
+
+
+@bot.message_handler(commands=["pdf"])
+def handle_pdf(message):
+    try:
+        os.mkdir(input_prefix+str(message.from_user.id))
+    except:
+        pass
+    bot.set_state(message.from_user.id,MyStates.get_images,message.chat.id)
+
+    bot.send_message(message.chat.id,"Bot Ready to recieve Images, Send create after sending all the images")
+
 
 
 @bot.message_handler(state=MyStates.got_image)
