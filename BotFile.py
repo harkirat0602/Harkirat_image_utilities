@@ -1,6 +1,7 @@
 import telebot
 import os
 from datetime import datetime
+import time
 
 import telebot.custom_filters
 from Detector import DocScan
@@ -10,12 +11,12 @@ from telebot.handler_backends import State, StatesGroup
 from telebot.storage import StateMemoryStorage
 from telebot.types import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from modules.compressor import compress
-from modules.PDF import generate_pdf
+from modules.PDF import generate_pdf, password_protect
 
 state_storage = StateMemoryStorage()
 
 token = os.getenv('BOT_TOKEN')
-bot = telebot.TeleBot(token, state_storage=state_storage)
+bot = telebot.TeleBot(token, state_storage=state_storage,threaded=False)
 input_prefix = "D:\\Repositories\\Harkirat_Image_Utilities\\input\\"
 
 class MyStates(StatesGroup):
@@ -65,26 +66,52 @@ def cancel_task(message):
 @bot.message_handler(state=MyStates.get_images,content_types="photo")
 def recieve_images_for_pdf(message):
     image_path = input_prefix+str(message.from_user.id)+"\\"+str(datetime.now()).replace(" ","_").replace(".","_").replace(":","_")+".jpg"
+    try:
+        open(image_path,"rb")
+        time.sleep(1)
+        image_path = input_prefix+str(message.from_user.id)+"\\"+str(datetime.now()).replace(" ","_").replace(".","_").replace(":","_")+".jpg"
+    except:
+        pass
+        
     print(image_path)
     photo = message.photo[-1]
     file = bot.get_file(photo.file_id)
     content = bot.download_file(file.file_path)
+
     with open(image_path,"wb") as img:
         img.write(content)
+    time.sleep
 
 @bot.message_handler(state=MyStates.get_images)
 def post_images(message):
-    if(message.text == "create"):
+    folder_path = input_prefix+str(message.from_user.id)+"\\"
+    if(message.text.lower() == "create"):
         wait_message = bot.send_message(message.chat.id,"Please Wait....")
-        folder_path = input_prefix+str(message.from_user.id)+"\\"
         pdf_path = folder_path + str(datetime.now()).replace(" ","_").replace(".","_").replace(":","_")+".pdf"
         generate_pdf(folder_path,output=pdf_path,add_watermark=True,custom_watermark="Harkirat`s Image Utilities")
+
+        try:
+            with open(folder_path+"password.txt","r") as pwd_file:
+                password = pwd_file.read()
+                pdf_path = password_protect(folder_path,pdf_path.split("\\")[-1],password)
+
+        except:
+            pass
+
 
         bot.send_document(message.chat.id,open(pdf_path,"rb"))
         bot.delete_message(wait_message.chat.id, wait_message.message_id)
         path = input_prefix+str(message.from_user.id)+"\\"
         delete_data(path)
         bot.delete_state(message.from_user.id,message.chat.id)
+    else:
+        try:
+            command,value = message.text.split(":")
+            if(command.lower()=="password"):
+                with open(folder_path+"password.txt","w") as pwd_file:
+                    pwd_file.write(value)
+        except Exception as e:
+            print("Failed!!", e)
 
 
 
