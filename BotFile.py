@@ -25,6 +25,15 @@ class MyStates(StatesGroup):
     get_images = State()
 
 
+def delete_data(path:str):
+    try:
+        for file in os.listdir(path):
+            os.remove(path+file)
+        os.rmdir(path)
+    except Exception as e:
+        print(e)
+
+
 def docScanner(message):
     # print(file)
     with bot.retrieve_data(message.from_user.id,message.chat.id) as data:
@@ -46,26 +55,37 @@ def docScanner(message):
 
 @bot.message_handler(state="*", commands=['cancel'])
 def cancel_task(message):
-    try:
-        path = input_prefix+str(message.from_user.id)+"\\"
-        for file in os.listdir(path):
-            os.remove(path+file)
-        os.rmdir(path)
-    except Exception as e:
-        print(e)
+    path = input_prefix+str(message.from_user.id)+"\\"
+    delete_data(path)
+    
     bot.send_message(message.chat.id, "Your task was cancelled")
     bot.delete_state(message.from_user.id, message.chat.id)
 
 
 @bot.message_handler(state=MyStates.get_images,content_types="photo")
 def recieve_images_for_pdf(message):
-    image_path = input_prefix+str(message.from_user.id)+"\\"+str(datetime.now()).replace(" ","").replace(".","").replace(":","_")+".jpg"
+    image_path = input_prefix+str(message.from_user.id)+"\\"+str(datetime.now()).replace(" ","_").replace(".","_").replace(":","_")+".jpg"
     print(image_path)
     photo = message.photo[-1]
     file = bot.get_file(photo.file_id)
     content = bot.download_file(file.file_path)
     with open(image_path,"wb") as img:
         img.write(content)
+
+@bot.message_handler(state=MyStates.get_images)
+def post_images(message):
+    if(message.text == "create"):
+        wait_message = bot.send_message(message.chat.id,"Please Wait....")
+        folder_path = input_prefix+str(message.from_user.id)+"\\"
+        pdf_path = folder_path + str(datetime.now()).replace(" ","_").replace(".","_").replace(":","_")+".pdf"
+        generate_pdf(folder_path,output=pdf_path,add_watermark=True,custom_watermark="Harkirat`s Image Utilities")
+
+        bot.send_document(message.chat.id,open(pdf_path,"rb"))
+        bot.delete_message(wait_message.chat.id, wait_message.message_id)
+        path = input_prefix+str(message.from_user.id)+"\\"
+        delete_data(path)
+        bot.delete_state(message.from_user.id,message.chat.id)
+
 
 
 
