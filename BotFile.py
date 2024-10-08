@@ -1,5 +1,7 @@
 import telebot
 import os
+from datetime import datetime
+import time
 
 import telebot.custom_filters
 from Detector import DocScan
@@ -9,16 +11,28 @@ from telebot.handler_backends import State, StatesGroup
 from telebot.storage import StateMemoryStorage
 from telebot.types import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from modules.compressor import compress
+from modules.PDF import generate_pdf, password_protect
 
 state_storage = StateMemoryStorage()
 
 token = os.getenv('BOT_TOKEN')
-bot = telebot.TeleBot(token, state_storage=state_storage)
+bot = telebot.TeleBot(token, state_storage=state_storage,threaded=False)
+input_prefix = "D:\\Repositories\\Harkirat_Image_Utilities\\input\\"
 
 class MyStates(StatesGroup):
     got_image = State()
     got_size = State()
     got_res = State()
+    get_images = State()
+
+
+def delete_data(path:str):
+    try:
+        for file in os.listdir(path):
+            os.remove(path+file)
+        os.rmdir(path)
+    except Exception as e:
+        print(e)
 
 
 def docScanner(message):
@@ -39,10 +53,83 @@ def docScanner(message):
     bot.delete_state(message.from_user.id, message.chat.id)
 
 
+
 @bot.message_handler(state="*", commands=['cancel'])
 def cancel_task(message):
+    path = input_prefix+str(message.from_user.id)+"\\"
+    delete_data(path)
+    
     bot.send_message(message.chat.id, "Your task was cancelled")
     bot.delete_state(message.from_user.id, message.chat.id)
+
+
+@bot.message_handler(state=MyStates.get_images,content_types="photo")
+def recieve_images_for_pdf(message):
+    image_path = input_prefix+str(message.from_user.id)+"\\"+str(datetime.now()).replace(" ","_").replace(".","_").replace(":","_")+".jpg"
+    try:
+        open(image_path,"rb")
+        time.sleep(1)
+        image_path = input_prefix+str(message.from_user.id)+"\\"+str(datetime.now()).replace(" ","_").replace(".","_").replace(":","_")+".jpg"
+    except:
+        pass
+        
+    print(image_path)
+    photo = message.photo[-1]
+    file = bot.get_file(photo.file_id)
+    content = bot.download_file(file.file_path)
+
+    with open(image_path,"wb") as img:
+        img.write(content)
+
+@bot.message_handler(state=MyStates.get_images,commands=['create'])
+def create_pdf(message):
+    folder_path = input_prefix+str(message.from_user.id)+"\\"
+    wait_message = bot.send_message(message.chat.id,"Please Wait....")
+    pdf_path = folder_path + str(datetime.now()).replace(" ","_").replace(".","_").replace(":","_")+".pdf"
+    generate_pdf(folder_path,output=pdf_path,add_watermark=True,custom_watermark="Harkirat`s Image Utilities")
+
+    try:
+        with open(folder_path+"password.txt","r") as pwd_file:
+            password = pwd_file.read()
+            pdf_path = password_protect(folder_path,pdf_path.split("\\")[-1],password)
+
+    except:
+        pass
+
+
+    bot.send_document(message.chat.id,open(pdf_path,"rb"))
+    bot.delete_message(wait_message.chat.id, wait_message.message_id)
+    path = input_prefix+str(message.from_user.id)+"\\"
+    delete_data(path)
+    bot.delete_state(message.from_user.id,message.chat.id)
+    
+
+
+@bot.message_handler(state=MyStates.get_images)
+def post_images(message):
+    folder_path = input_prefix+str(message.from_user.id)+"\\"
+    try:
+        command,value = message.text.split(":")
+        if(command.lower()=="password"):
+            with open(folder_path+"password.txt","w") as pwd_file:
+                pwd_file.write(value)
+            bot.send_message(message.chat.id,"Password Set!!!")
+    except Exception as e:
+        print("Failed!!", e)
+
+
+
+
+@bot.message_handler(commands=["pdf"])
+def handle_pdf(message):
+    try:
+        os.mkdir(input_prefix+str(message.from_user.id))
+    except:
+        pass
+    bot.set_state(message.from_user.id,MyStates.get_images,message.chat.id)
+
+    bot.send_message(message.chat.id,"Bot Ready to recieve Images,\n\nTo add password to pdf use <code>password:12345</code>\n\nSend /create when ready",parse_mode="html")
+
 
 
 @bot.message_handler(state=MyStates.got_image)
@@ -125,6 +212,11 @@ def image_receiver(message):
     with bot.retrieve_data(message.from_user.id,message.chat.id) as data:
             data['file_id'] = message.photo[-1].file_id
     
+@bot.message_handler(commands=['start'])
+def welcome(message):
+    bot.send_message(message.chat.id,"Hello There!!\nCurrent Features of the bot is:-\n1. Downsizing an Image to specified size\n2. Convert Image(s) to PDF")
+
+
 bot.add_custom_filter(telebot.custom_filters.StateFilter(bot))
 bot.add_custom_filter(telebot.custom_filters.IsDigitFilter())
 
