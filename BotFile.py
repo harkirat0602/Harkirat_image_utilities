@@ -17,7 +17,7 @@ state_storage = StateMemoryStorage()
 
 token = os.getenv('BOT_TOKEN')
 bot = telebot.TeleBot(token, state_storage=state_storage,threaded=False)
-input_prefix = "D:\\Repositories\\Harkirat_Image_Utilities\\input\\"
+input_prefix = "input\\"
 
 class MyStates(StatesGroup):
     got_image = State()
