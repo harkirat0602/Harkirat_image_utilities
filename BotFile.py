@@ -17,7 +17,7 @@ state_storage = StateMemoryStorage()
 
 token = os.getenv('BOT_TOKEN')
 bot = telebot.TeleBot(token, state_storage=state_storage,threaded=False)
-input_prefix = "input\\"
+input_prefix = r"input\\"
 
 class MyStates(StatesGroup):
     got_image = State()
@@ -65,11 +65,11 @@ def cancel_task(message):
 
 @bot.message_handler(state=MyStates.get_images,content_types="photo")
 def recieve_images_for_pdf(message):
-    image_path = input_prefix+str(message.from_user.id)+"\\"+str(datetime.now()).replace(" ","_").replace(".","_").replace(":","_")+".jpg"
+    image_path = input_prefix+str(message.from_user.id)+r"\\"+str(datetime.now()).replace(" ","_").replace(".","_").replace(":","_")+".jpg"
     try:
         open(image_path,"rb")
         time.sleep(1)
-        image_path = input_prefix+str(message.from_user.id)+"\\"+str(datetime.now()).replace(" ","_").replace(".","_").replace(":","_")+".jpg"
+        image_path = input_prefix+str(message.from_user.id)+r"\\"+str(datetime.now()).replace(" ","_").replace(".","_").replace(":","_")+".jpg"
     except:
         pass
         
@@ -83,7 +83,7 @@ def recieve_images_for_pdf(message):
 
 @bot.message_handler(state=MyStates.get_images,commands=['create'])
 def create_pdf(message):
-    folder_path = input_prefix+str(message.from_user.id)+"\\"
+    folder_path = input_prefix+str(message.from_user.id)+r"\\"
     wait_message = bot.send_message(message.chat.id,"Please Wait....")
     pdf_path = folder_path + str(datetime.now()).replace(" ","_").replace(".","_").replace(":","_")+".pdf"
     generate_pdf(folder_path,output=pdf_path,add_watermark=True,custom_watermark="Harkirat`s Image Utilities")
