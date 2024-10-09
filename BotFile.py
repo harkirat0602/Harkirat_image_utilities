@@ -17,7 +17,7 @@ state_storage = StateMemoryStorage()
 
 token = os.getenv('BOT_TOKEN')
 bot = telebot.TeleBot(token, state_storage=state_storage,threaded=False)
-input_prefix = r"input\\"
+input_prefix = "input/"
 
 class MyStates(StatesGroup):
     got_image = State()
@@ -56,7 +56,7 @@ def docScanner(message):
 
 @bot.message_handler(state="*", commands=['cancel'])
 def cancel_task(message):
-    path = input_prefix+str(message.from_user.id)+"\\"
+    path = input_prefix+str(message.from_user.id)+"/"
     delete_data(path)
     
     bot.send_message(message.chat.id, "Your task was cancelled")
@@ -65,11 +65,11 @@ def cancel_task(message):
 
 @bot.message_handler(state=MyStates.get_images,content_types="photo")
 def recieve_images_for_pdf(message):
-    image_path = input_prefix+str(message.from_user.id)+r"\\"+str(datetime.now()).replace(" ","_").replace(".","_").replace(":","_")+".jpg"
+    image_path = input_prefix+str(message.from_user.id)+"/"+str(datetime.now()).replace(" ","_").replace(".","_").replace(":","_")+".jpg"
     try:
         open(image_path,"rb")
         time.sleep(1)
-        image_path = input_prefix+str(message.from_user.id)+r"\\"+str(datetime.now()).replace(" ","_").replace(".","_").replace(":","_")+".jpg"
+        image_path = input_prefix+str(message.from_user.id)+"/"+str(datetime.now()).replace(" ","_").replace(".","_").replace(":","_")+".jpg"
     except:
         pass
         
@@ -83,7 +83,7 @@ def recieve_images_for_pdf(message):
 
 @bot.message_handler(state=MyStates.get_images,commands=['create'])
 def create_pdf(message):
-    folder_path = input_prefix+str(message.from_user.id)+r"\\"
+    folder_path = input_prefix+str(message.from_user.id)+"/"
     wait_message = bot.send_message(message.chat.id,"Please Wait....")
     pdf_path = folder_path + str(datetime.now()).replace(" ","_").replace(".","_").replace(":","_")+".pdf"
     generate_pdf(folder_path,output=pdf_path,add_watermark=True,custom_watermark="Harkirat`s Image Utilities")
@@ -91,7 +91,7 @@ def create_pdf(message):
     try:
         with open(folder_path+"password.txt","r") as pwd_file:
             password = pwd_file.read()
-            pdf_path = password_protect(folder_path,pdf_path.split("\\")[-1],password)
+            pdf_path = password_protect(folder_path,pdf_path.split("/")[-1],password)
 
     except:
         pass
@@ -99,7 +99,7 @@ def create_pdf(message):
 
     bot.send_document(message.chat.id,open(pdf_path,"rb"))
     bot.delete_message(wait_message.chat.id, wait_message.message_id)
-    path = input_prefix+str(message.from_user.id)+"\\"
+    path = input_prefix+str(message.from_user.id)+"/"
     delete_data(path)
     bot.delete_state(message.from_user.id,message.chat.id)
     
@@ -107,7 +107,7 @@ def create_pdf(message):
 
 @bot.message_handler(state=MyStates.get_images)
 def post_images(message):
-    folder_path = input_prefix+str(message.from_user.id)+"\\"
+    folder_path = input_prefix+str(message.from_user.id)+"/"
     try:
         command,value = message.text.split(":")
         if(command.lower()=="password"):
