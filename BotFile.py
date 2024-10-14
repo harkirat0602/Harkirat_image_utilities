@@ -73,7 +73,7 @@ def recieve_images_for_pdf(message):
     except:
         pass
         
-    print(image_path)
+    # print(image_path)
     photo = message.photo[-1]
     file = bot.get_file(photo.file_id)
     content = bot.download_file(file.file_path)
@@ -96,9 +96,18 @@ def create_pdf(message):
     except:
         pass
 
+    try:
+        with open(folder_path+"name.txt","r") as name_file:
+            new_name = folder_path + name_file.read() + ".pdf"
+            os.rename(pdf_path,new_name)
+            pdf_path = new_name
+
+    except:
+        pass
 
     bot.send_document(message.chat.id,open(pdf_path,"rb"))
     bot.delete_message(wait_message.chat.id, wait_message.message_id)
+    print(message.from_user.first_name+" just made a PDF")
     path = input_prefix+str(message.from_user.id)+"/"
     delete_data(path)
     bot.delete_state(message.from_user.id,message.chat.id)
@@ -114,6 +123,10 @@ def post_images(message):
             with open(folder_path+"password.txt","w") as pwd_file:
                 pwd_file.write(value)
             bot.send_message(message.chat.id,"Password Set!!!")
+        elif(command.lower()=="name"):
+            with open(folder_path+"name.txt","w") as name_file:
+                name_file.write(value)
+            bot.send_message(message.chat.id,"Name Set!!!")
     except Exception as e:
         print("Failed!!", e)
 
@@ -134,7 +147,7 @@ def handle_pdf(message):
 
 @bot.message_handler(state=MyStates.got_image)
 def utility_selector(message):
-    print(message.text)
+    # print(message.text)
 
     if message.text == "Scanner":
         docScanner(message)
@@ -192,6 +205,7 @@ The resolution has been reduced to {final_res}
 The quality is reduced to {quality}
     """)
     bot.send_document(message.chat.id,open(output_path,'rb'))
+    print(message.from_user.first_name+" compressed an Image")
     os.remove("input/temp.jpg")
     os.remove(output_path)
     bot.delete_state(message.from_user.id, message.chat.id)
@@ -208,7 +222,7 @@ def image_receiver(message):
 
     bot.send_message(message.chat.id, "Image recieved", reply_markup=reply_markup)
     bot.set_state(message.from_user.id, MyStates.got_image, message.chat.id)
-    print("State Set")
+    # print("State Set")
     with bot.retrieve_data(message.from_user.id,message.chat.id) as data:
             data['file_id'] = message.photo[-1].file_id
     

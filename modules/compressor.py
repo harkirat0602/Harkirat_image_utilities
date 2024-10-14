@@ -32,7 +32,7 @@ def compress(img_path:str, limit_size:int =False, given_res= False):
 
         if buffer.tell()/1024 < limit_size:
             im.save("output/final.jpg",quality=quality, optimize=True)
-            print(im.size)
+            # print(im.size)
             break
         else: 
             quality-=2
